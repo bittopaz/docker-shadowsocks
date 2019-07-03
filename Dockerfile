@@ -56,7 +56,6 @@ ENV METHOD      aes-256-cfb
 ENV PASSWORD=
 ENV TIMEOUT     60
 ENV DNS_ADDR    8.8.8.8
-ENV HOST    www.example.com
 
 EXPOSE $SERVER_PORT/tcp
 EXPOSE $SERVER_PORT/udp
@@ -71,5 +70,5 @@ CMD ss-server -s "$SERVER_ADDR" \
               --fast-open       \
               --acl /etc/ss-server/local.acl \
               --plugin v2ray-plugin \
-              --plugin-opts "tls;host=$HOST" \
+              --plugin-opts "server" \
               $OPTIONS
