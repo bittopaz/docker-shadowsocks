@@ -44,7 +44,7 @@ RUN set -ex \
         && cd .. \
         && rm -rf $SS_DIR \
     && mkdir -p $V2RAY_PLUGIN_DIR && cd $V2RAY_PLUGIN_DIR \
-        && curl -sSL $SS_URL | tar xz \
+        && curl -sSL $V2RAY_PLUGIN_URL | tar xz \
         && mv v2ray-plugin_linux_amd64 /usr/local/bin/v2ray-plugin \
         && cd .. \
         && rm -rf $V2RAY_PLUGIN_DIR \
