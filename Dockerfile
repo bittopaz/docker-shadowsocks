@@ -1,0 +1,75 @@
+FROM alpine:3.8
+MAINTAINER Xiaoyu Zhong
+
+ENV SS_VER 3.3.0
+ENV SS_URL https://github.com/shadowsocks/shadowsocks-libev/archive/v$SS_VER.tar.gz
+ENV SS_DIR shadowsocks-libev-$SS_VER
+
+ENV V2RAY_PLUGIN_VER 1.1.0
+ENV V2RAY_PLUGIN_URL https://github.com/shadowsocks/v2ray-plugin/releases/download/v${V2RAY_PLUGIN_VER}/v2ray-plugin-linux-amd64-v${V2RAY_PLUGIN_VER}.tar.gz
+ENV V2RAY_PLUGIN_DIR v2ray-plugin-$V2RAY_PLUGIN_VER
+
+RUN set -ex \
+    && apk add --no-cache c-ares \
+                          libcrypto1.0 \
+                          libev \
+                          libsodium \
+                          mbedtls \
+                          pcre \
+    && apk add --no-cache \
+               --virtual TMP autoconf \
+                             automake \
+                             build-base \
+                             c-ares-dev \
+                             curl \
+                             gettext-dev \
+                             libev-dev \
+                             libsodium-dev \
+                             libtool \
+                             linux-headers \
+                             mbedtls-dev \
+                             openssl-dev \
+                             pcre-dev \
+                             tar \
+    && curl -sSL $SS_URL | tar xz \
+    && cd $SS_DIR \
+        && curl -sSL https://github.com/shadowsocks/ipset/archive/shadowsocks.tar.gz | tar xz --strip 1 -C libipset \
+        && curl -sSL https://github.com/shadowsocks/libcork/archive/shadowsocks.tar.gz | tar xz --strip 1 -C libcork \
+        && curl -sSL https://github.com/shadowsocks/libbloom/archive/master.tar.gz | tar xz --strip 1 -C libbloom \
+        && ./autogen.sh \
+        && ./configure --disable-documentation \
+        && make install \
+        && mkdir /etc/ss-server \
+        && cp acl/local.acl /etc/ss-server/ \
+        && cd .. \
+        && rm -rf $SS_DIR \
+    && mkdir -p $V2RAY_PLUGIN_DIR && cd $V2RAY_PLUGIN_DIR \
+        && curl -sSL $SS_URL | tar xz \
+        && mv v2ray-plugin_linux_amd64 /usr/local/bin/v2ray-plugin \
+        && cd .. \
+        && rm -rf $V2RAY_PLUGIN_DIR \
+    && apk del TMP
+
+ENV SERVER_ADDR 0.0.0.0
+ENV SERVER_PORT 8388
+ENV METHOD      aes-256-cfb
+ENV PASSWORD=
+ENV TIMEOUT     60
+ENV DNS_ADDR    8.8.8.8
+ENV HOST    www.example.com
+
+EXPOSE $SERVER_PORT/tcp
+EXPOSE $SERVER_PORT/udp
+
+CMD ss-server -s "$SERVER_ADDR" \
+              -p "$SERVER_PORT" \
+              -m "$METHOD"      \
+              -k "$PASSWORD"    \
+              -t "$TIMEOUT"     \
+              -d "$DNS_ADDR"    \
+              -u                \
+              --fast-open       \
+              --acl /etc/ss-server/local.acl \
+              --plugin v2ray-plugin \
+              --plugin-opts "tls;host=$HOST" \
+              $OPTIONS
